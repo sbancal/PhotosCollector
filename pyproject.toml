@@ -1,0 +1,23 @@
+[tool.poetry]
+name = "photoscollector"
+version = "0.1.0"
+description = "Collect all photos from several sources and sort them to a single destination"
+authors = ["Samuel Bancal <sam.bancal@gmail.com>"]
+license = "MIT"
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.10"
+pillow = "^10.2.0"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.poetry.group.dev.dependencies]
+black = "^24.2.0"
+flake8 = "^7.0.0"
+pre-commit = "^3.6.0"
+
+[tool.isort]
+profile = "black"
