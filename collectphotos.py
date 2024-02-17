@@ -6,6 +6,7 @@ import os
 import re
 import shutil
 import sys
+import time
 from pathlib import Path
 from types import SimpleNamespace
 
@@ -100,6 +101,24 @@ class NoExifFolder:
     def get_next_file_name(self):
         self.last_file_nb += 1
         return f"{self.last_file_nb:0{NO_EXIF_FILE_NB_DIGITS}}"
+
+
+class Chrono:
+    def __init__(self):
+        self.start = time.time()
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        elapsed = time.time() - self.start
+        hours = int(elapsed / 3600)
+        minutes = int((elapsed % 3600) / 60)
+        seconds = int(elapsed % 60)
+        centi_seconds = int((elapsed * 100) % 100)
+        print(
+            f"Elapsed time: {hours:02d}:{minutes:02d}:{seconds:02d}.{centi_seconds:02d}"
+        )
 
 
 def browse_source(source_folder, dest_folder):
@@ -224,6 +243,6 @@ def operate_file(src, dest, suffix, tools, no_date, index=0):
 
 if __name__ == "__main__":
     options = parse_options()
-
-    for source in options.source:
-        browse_source(source, options.dest)
+    with Chrono():
+        for source in options.source:
+            browse_source(source, options.dest)
