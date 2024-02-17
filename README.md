@@ -26,7 +26,7 @@ make install
 # Usage
 
 ```bash
-poetry run ./collectphotos.py -s ~/source1 ~/source2 -d ~/destination
+poetry run ./collectphotos.py -s ~/source1 ~/source2 -d ~/destination --operator ln
 ```
 
 # License

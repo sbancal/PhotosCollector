@@ -13,7 +13,6 @@ from types import SimpleNamespace
 from PIL import Image
 
 EXTENSIONS = [".jpg", ".jpeg"]
-OPERATION = "ln"  # "copy" or "move" or "ln"
 NO_EXIF_FOLDER = "no_exif"
 NO_EXIF_FILE_NB_DIGITS = 7
 SHOW_PROGRESS_EVERY = 10
@@ -33,6 +32,12 @@ def parse_options():
     parser = argparse.ArgumentParser(description="Collect photos and sort them by date")
     parser.add_argument("-s", "--source", nargs="+", help="The source folders")
     parser.add_argument("-d", "--dest", required=True, help="The destination folder")
+    parser.add_argument(
+        "--operator",
+        choices=["cp", "mv", "ln"],
+        required=True,
+        help="The operator used to collect (cp, mv, ln)",
+    )
     args = parser.parse_args()
 
     for source in args.source:
@@ -121,7 +126,7 @@ class Chrono:
         )
 
 
-def browse_source(source_folder, dest_folder):
+def browse_source(source_folder, dest_folder, operator):
     """
     Browse the source folder and launch the processing of each file
     """
@@ -139,7 +144,7 @@ def browse_source(source_folder, dest_folder):
         if file.suffix.lower() not in EXTENSIONS:
             # print(f"Skip {file=} (not a photo)")
             continue
-        process_file(file, dest_folder, tools)
+        process_file(file, dest_folder, tools, operator)
         tools.counts["total_processed"] += 1
         if tools.counts["total_processed"] % SHOW_PROGRESS_EVERY == 0:
             print(".", end="", flush=True)
@@ -151,7 +156,7 @@ def browse_source(source_folder, dest_folder):
     print(f"Skipped {tools.counts['duplicate']} duplicates")
 
 
-def process_file(file, dest_folder, tools):
+def process_file(file, dest_folder, tools, operator):
     """
     Determine where to place the file and request the operation on it
     """
@@ -172,12 +177,12 @@ def process_file(file, dest_folder, tools):
         filename = tools.no_exif_folder.get_next_file_name()
         no_date = True
 
-    operate_file(file, dest / filename, file.suffix, tools, no_date)
+    operate_file(file, dest / filename, file.suffix, tools, no_date, operator)
 
 
-def operate_file(src, dest, suffix, tools, no_date, index=0):
+def operate_file(src, dest, suffix, tools, no_date, operator, index=0):
     """
-    Copy / move / hardlink the file to the destination (according to OPERATION)
+    Copy / move / hardlink the file to the destination (according to operator)
     In case of name conflict, check if the file is a duplicate. If not, add a suffix
     """
     if index == 0:
@@ -190,8 +195,8 @@ def operate_file(src, dest, suffix, tools, no_date, index=0):
         if not tools.check_sum_manager.is_unique(src):
             tools.counts["duplicate"] += 1
             return
-        return operate_file(src, dest, suffix, tools, no_date, index + 1)
-    if OPERATION == "copy":
+        return operate_file(src, dest, suffix, tools, no_date, operator, index + 1)
+    if operator == "cp":
         # print(f"cp {src} {full_dest}")
         try:
             shutil.copy2(src, full_dest)
@@ -206,7 +211,7 @@ def operate_file(src, dest, suffix, tools, no_date, index=0):
                 tools.counts["no_date_collected"] += 1
             else:
                 tools.counts["total_collected"] += 1
-    elif OPERATION == "move":
+    elif operator == "mv":
         # print(f"mv {src} {full_dest}")
         try:
             shutil.move(src, full_dest)
@@ -221,7 +226,7 @@ def operate_file(src, dest, suffix, tools, no_date, index=0):
                 tools.counts["no_date_collected"] += 1
             else:
                 tools.counts["total_collected"] += 1
-    elif OPERATION == "ln":
+    elif operator == "ln":
         # print(f"ln {src} {full_dest}")
         try:
             os.link(src, full_dest)
@@ -237,7 +242,7 @@ def operate_file(src, dest, suffix, tools, no_date, index=0):
             else:
                 tools.counts["total_collected"] += 1
     else:
-        print(f"Error: Unknown operation {OPERATION}", file=sys.stderr)
+        print(f"Error: Unknown operator {operator}", file=sys.stderr)
         sys.exit(1)
 
 
@@ -245,4 +250,4 @@ if __name__ == "__main__":
     options = parse_options()
     with Chrono():
         for source in options.source:
-            browse_source(source, options.dest)
+            browse_source(source, options.dest, options.operator)
