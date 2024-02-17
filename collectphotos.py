@@ -144,7 +144,10 @@ def browse_source(source_folder, dest_folder, operator):
         if file.suffix.lower() not in EXTENSIONS:
             # print(f"Skip {file=} (not a photo)")
             continue
-        process_file(file, dest_folder, tools, operator)
+        try:
+            process_file(file, dest_folder, tools, operator)
+        except Exception as e:
+            print(f"Error while processing file '{file}': {e}", file=sys.stderr)
         tools.counts["total_processed"] += 1
         if tools.counts["total_processed"] % SHOW_PROGRESS_EVERY == 0:
             print(".", end="", flush=True)
