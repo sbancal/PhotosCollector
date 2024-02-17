@@ -128,6 +128,7 @@ def browse_source(source_folder, dest_folder):
     print(f"Processed {tools.counts['total_processed']} files")
     print(f"Collected {tools.counts['total_collected']} photos")
     print(f"Collected {tools.counts['no_date_collected']} photos with no date")
+    print(f"Processed {len(tools.check_sum_manager.checksums)} checksums")
     print(f"Skipped {tools.counts['duplicate']} duplicates")
 
 
