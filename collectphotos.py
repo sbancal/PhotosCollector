@@ -126,9 +126,9 @@ class Chrono:
         )
 
 
-def browse_source(source_folder, dest_folder, operator):
+def browse_sources(source_folders, dest_folder, operator):
     """
-    Browse the source folder and launch the processing of each file
+    Browse the source folders and launch the processing of each file
     """
     tools = SimpleNamespace()
     tools.check_sum_manager = CheckSumManager()
@@ -140,17 +140,18 @@ def browse_source(source_folder, dest_folder, operator):
         "duplicate": 0,
     }
 
-    for file in Path(source_folder).rglob("*"):
-        if file.suffix.lower() not in EXTENSIONS:
-            # print(f"Skip {file=} (not a photo)")
-            continue
-        try:
-            process_file(file, dest_folder, tools, operator)
-        except Exception as e:
-            print(f"Error while processing file '{file}': {e}", file=sys.stderr)
-        tools.counts["total_processed"] += 1
-        if tools.counts["total_processed"] % SHOW_PROGRESS_EVERY == 0:
-            print(".", end="", flush=True)
+    for source_folder in source_folders:
+        for file in Path(source_folder).rglob("*"):
+            if file.suffix.lower() not in EXTENSIONS:
+                # print(f"Skip {file=} (not a photo)")
+                continue
+            try:
+                process_file(file, dest_folder, tools, operator)
+            except Exception as e:
+                print(f"Error while processing file '{file}': {e}", file=sys.stderr)
+            tools.counts["total_processed"] += 1
+            if tools.counts["total_processed"] % SHOW_PROGRESS_EVERY == 0:
+                print(".", end="", flush=True)
 
     print(f"Processed {tools.counts['total_processed']} files")
     print(f"Collected {tools.counts['total_collected']} photos")
@@ -260,5 +261,4 @@ def operate_file(src, dest, suffix, tools, no_date, operator, index=0):
 if __name__ == "__main__":
     options = parse_options()
     with Chrono():
-        for source in options.source:
-            browse_source(source, options.dest, options.operator)
+        browse_sources(options.source, options.dest, options.operator)
