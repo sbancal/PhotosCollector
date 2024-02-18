@@ -10,7 +10,7 @@ import time
 from pathlib import Path
 from types import SimpleNamespace
 
-from PIL import Image
+from PIL import Image, UnidentifiedImageError
 
 EXTENSIONS = [".jpg", ".jpeg"]
 NO_EXIF_FOLDER = "no_exif"
@@ -165,14 +165,22 @@ def process_file(file, dest_folder, tools, operator):
     """
     try:
         exif = Image.open(file)._getexif()
-        date = exif[36867]
-        ymd, hms = date.split(" ")
-        yyyy, mm, dd = ymd.split(":")
-        hh, mi, ss = hms.split(":")
+        for exif_field in (
+            36867,  # DateTimeOriginal
+            36868,  # DateTimeDigitized
+        ):
+            try:
+                date = exif[exif_field]
+                ymd, hms = date.split(" ")
+                yyyy, mm, dd = ymd.split(":")
+                hh, mi, ss = hms.split(":")
+                break
+            except (KeyError, ValueError, TypeError):
+                pass
         dest = Path(dest_folder) / f"{yyyy}-{mm}"
         filename = f"{yyyy}-{mm}-{dd}_{hh}-{mi}-{ss}"
         no_date = False
-    except (KeyError, TypeError):
+    except (NameError, UnidentifiedImageError):
         if not tools.check_sum_manager.is_unique(file):
             tools.counts["duplicate"] += 1
             return
