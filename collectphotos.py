@@ -173,7 +173,7 @@ def process_file(file, dest_folder, tools, operator):
         dest = Path(dest_folder) / f"{yyyy}-{mm}"
         filename = f"{yyyy}-{mm}-{dd}_{hh}-{mi}-{ss}"
         no_date = False
-    except (KeyError, TypeError):
+    except (KeyError, TypeError, ValueError):
         if not tools.check_sum_manager.is_unique(file):
             tools.counts["duplicate"] += 1
             return
