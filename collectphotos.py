@@ -10,7 +10,7 @@ import time
 from pathlib import Path
 from types import SimpleNamespace
 
-from PIL import Image
+from PIL import Image, UnidentifiedImageError
 
 EXTENSIONS = [".jpg", ".jpeg"]
 NO_EXIF_FOLDER = "no_exif"
@@ -173,7 +173,7 @@ def process_file(file, dest_folder, tools, operator):
         dest = Path(dest_folder) / f"{yyyy}-{mm}"
         filename = f"{yyyy}-{mm}-{dd}_{hh}-{mi}-{ss}"
         no_date = False
-    except (KeyError, TypeError, ValueError):
+    except (KeyError, TypeError, ValueError, UnidentifiedImageError):
         if not tools.check_sum_manager.is_unique(file):
             tools.counts["duplicate"] += 1
             return
