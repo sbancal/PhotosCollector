@@ -77,6 +77,7 @@ class CheckSumManager:
         return count == 1
 
     def dump(self):
+        print()
         print("Checksums:")
 
         for file, checksum in sorted(self.checksums.items(), key=lambda item: item[1]):
@@ -143,16 +144,18 @@ def browse_sources(source_folders, dest_folder, operator):
     for source_folder in source_folders:
         for file in Path(source_folder).rglob("*"):
             if file.suffix.lower() not in EXTENSIONS:
-                # print(f"Skip {file=} (not a photo)")
                 continue
             try:
                 process_file(file, dest_folder, tools, operator)
             except Exception as e:
+                print()
                 print(f"Error while processing file '{file}': {e}", file=sys.stderr)
             tools.counts["total_processed"] += 1
             if tools.counts["total_processed"] % SHOW_PROGRESS_EVERY == 0:
                 print(".", end="", flush=True)
 
+    print()
+    print()
     print(f"Processed {tools.counts['total_processed']} files")
     print(f"Collected {tools.counts['total_collected']} photos")
     print(f"Collected {tools.counts['no_date_collected']} photos with no date")
@@ -201,7 +204,6 @@ def operate_file(src, dest, suffix, tools, no_date, operator, index=0):
             return
         return operate_file(src, dest, suffix, tools, no_date, operator, index + 1)
     if operator == "cp":
-        # print(f"cp {src} {full_dest}")
         try:
             shutil.copy2(src, full_dest)
             if no_date:
@@ -216,7 +218,6 @@ def operate_file(src, dest, suffix, tools, no_date, operator, index=0):
             else:
                 tools.counts["total_collected"] += 1
     elif operator == "mv":
-        # print(f"mv {src} {full_dest}")
         try:
             shutil.move(src, full_dest)
             if no_date:
@@ -231,7 +232,6 @@ def operate_file(src, dest, suffix, tools, no_date, operator, index=0):
             else:
                 tools.counts["total_collected"] += 1
     elif operator == "ln":
-        # print(f"ln {src} {full_dest}")
         try:
             os.link(src, full_dest)
             if no_date:
