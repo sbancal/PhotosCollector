@@ -10,9 +10,9 @@ import time
 from pathlib import Path
 from types import SimpleNamespace
 
-from PIL import Image, UnidentifiedImageError
+import exifread
 
-EXTENSIONS = [".jpg", ".jpeg"]
+EXTENSIONS = [".jpg", ".jpeg", ".cr2", ".nef", ".dng"]
 NO_EXIF_FOLDER = "no_exif"
 NO_EXIF_FILE_NB_DIGITS = 7
 SHOW_PROGRESS_EVERY = 10
@@ -168,15 +168,18 @@ def process_file(file, dest_folder, tools, operator):
     Determine where to place the file and request the operation on it
     """
     try:
-        exif = Image.open(file)._getexif()
-        date = exif[36867]
+        with open(file, "rb") as f:
+            tags = exifread.process_file(f, stop_tag="EXIF DateTimeOriginal")
+        date = str(tags["EXIF DateTimeOriginal"])
         ymd, hms = date.split(" ")
         yyyy, mm, dd = ymd.split(":")
         hh, mi, ss = hms.split(":")
         dest = Path(dest_folder) / f"{yyyy}-{mm}"
         filename = f"{yyyy}-{mm}-{dd}_{hh}-{mi}-{ss}"
+        if filename == "0000-00-00_00-00-00":
+            raise ValueError("Date is 0000-00-00_00-00-00")
         no_date = False
-    except (KeyError, TypeError, ValueError, UnidentifiedImageError):
+    except (KeyError, ValueError):
         if not tools.check_sum_manager.is_unique(file):
             tools.counts["duplicate"] += 1
             return
