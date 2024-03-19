@@ -38,7 +38,18 @@ def parse_options():
         required=True,
         help="The operator used to collect (cp, mv, ln)",
     )
+    parser.add_argument(
+        "--rm",
+        action="store_true",
+        help="Remove the source files when duplicate. Only valid with --operator mv",
+    )
     args = parser.parse_args()
+    if args.rm and args.operator != "mv":
+        print(
+            "Error: The --rm option is only valid with the --operator mv",
+            file=sys.stderr,
+        )
+        sys.exit(1)
 
     for source in args.source:
         validate_folder(source)
@@ -127,7 +138,7 @@ class Chrono:
         )
 
 
-def browse_sources(source_folders, dest_folder, operator):
+def browse_sources(source_folders, dest_folder, operator, rm):
     """
     Browse the source folders and launch the processing of each file
     """
@@ -146,7 +157,7 @@ def browse_sources(source_folders, dest_folder, operator):
             if file.suffix.lower() not in EXTENSIONS:
                 continue
             try:
-                process_file(file, dest_folder, tools, operator)
+                process_file(file, dest_folder, tools, operator, rm)
             except Exception as e:
                 print()
                 print(f"Error while processing file '{file}': {e}", file=sys.stderr)
@@ -157,13 +168,19 @@ def browse_sources(source_folders, dest_folder, operator):
     print()
     print()
     print(f"Processed {tools.counts['total_processed']} files")
-    print(f"Collected {tools.counts['total_collected']} photos")
-    print(f"Collected {tools.counts['no_date_collected']} photos with no date")
+    print(f"Collected with {operator} {tools.counts['total_collected']} photos")
+    print(
+        f"Collected with {operator} {tools.counts['no_date_collected']} photos "
+        "with no date"
+    )
     print(f"Processed {len(tools.check_sum_manager.checksums)} checksums")
-    print(f"Skipped {tools.counts['duplicate']} duplicates")
+    if rm:
+        print(f"Removed {tools.counts['duplicate']} duplicates")
+    else:
+        print(f"Skipped {tools.counts['duplicate']} duplicates")
 
 
-def process_file(file, dest_folder, tools, operator):
+def process_file(file, dest_folder, tools, operator, rm):
     """
     Determine where to place the file and request the operation on it
     """
@@ -182,15 +199,17 @@ def process_file(file, dest_folder, tools, operator):
     except (KeyError, ValueError):
         if not tools.check_sum_manager.is_unique(file):
             tools.counts["duplicate"] += 1
+            if rm:
+                os.unlink(file)
             return
         dest = tools.no_exif_folder.dest
         filename = tools.no_exif_folder.get_next_file_name()
         no_date = True
 
-    operate_file(file, dest / filename, file.suffix, tools, no_date, operator)
+    operate_file(file, dest / filename, file.suffix, tools, no_date, operator, rm)
 
 
-def operate_file(src, dest, suffix, tools, no_date, operator, index=0):
+def operate_file(src, dest, suffix, tools, no_date, operator, rm, index=0):
     """
     Copy / move / hardlink the file to the destination (according to operator)
     In case of name conflict, check if the file is a duplicate. If not, add a suffix
@@ -204,8 +223,10 @@ def operate_file(src, dest, suffix, tools, no_date, operator, index=0):
         tools.check_sum_manager.process(full_dest)
         if not tools.check_sum_manager.is_unique(src):
             tools.counts["duplicate"] += 1
+            if rm:
+                os.unlink(src)
             return
-        return operate_file(src, dest, suffix, tools, no_date, operator, index + 1)
+        return operate_file(src, dest, suffix, tools, no_date, operator, rm, index + 1)
     if operator == "cp":
         try:
             shutil.copy2(src, full_dest)
@@ -256,4 +277,4 @@ def operate_file(src, dest, suffix, tools, no_date, operator, index=0):
 if __name__ == "__main__":
     options = parse_options()
     with Chrono():
-        browse_sources(options.source, options.dest, options.operator)
+        browse_sources(options.source, options.dest, options.operator, options.rm)
